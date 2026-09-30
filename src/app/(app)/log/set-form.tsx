@@ -2,21 +2,35 @@
 import { useState } from "react";
 import { addSet } from "@/app/actions";
 
-type Ex = { id: string; name: string };
-type Last = Record<string, { reps: number; weight: number }>;
+type Kind = "strength" | "bodyweight" | "cardio";
+type Ex = { id: string; name: string; kind: Kind };
+type Last = Record<string, { reps: number; weight: number; minutes: number; distance: number }>;
 
 export function SetForm({ workoutId, exercises, last, unit }: { workoutId: string; exercises: Ex[]; last: Last; unit: string }) {
   const [ex, setEx] = useState(exercises[0]?.id ?? "");
   const [adding, setAdding] = useState(exercises.length === 0);
-  const prefill = last[ex];
+  const [newKind, setNewKind] = useState<Kind>("strength");
+  const kind: Kind = adding ? newKind : exercises.find((e) => e.id === ex)?.kind ?? "strength";
+  const p = adding ? undefined : last[ex];
+  const distUnit = unit === "lb" ? "mi" : "km";
+
   return (
-    <form action={addSet} className="stack" key={`${ex}-${prefill?.weight}-${prefill?.reps}`}>
+    <form action={addSet} className="stack" key={`${ex}-${adding}-${kind}-${p?.weight}-${p?.reps}-${p?.minutes}`}>
       <input type="hidden" name="workoutId" value={workoutId} />
       {adding ? (
-        <div className="row">
-          <label>Exercise name<input name="newExercise" required autoFocus /></label>
-          <label>Muscle group<input name="muscle" /></label>
-        </div>
+        <>
+          <div className="row">
+            <label>Exercise name<input name="newExercise" required autoFocus /></label>
+            <label>Type
+              <select name="kind" value={newKind} onChange={(e) => setNewKind(e.target.value as Kind)}>
+                <option value="strength">Weights (weight × reps)</option>
+                <option value="bodyweight">Bodyweight (reps)</option>
+                <option value="cardio">Cardio / timed</option>
+              </select>
+            </label>
+          </div>
+          <label>Muscle group (optional)<input name="muscle" /></label>
+        </>
       ) : (
         <label>Exercise
           <select name="exerciseId" value={ex} onChange={(e) => setEx(e.target.value)}>
@@ -24,11 +38,27 @@ export function SetForm({ workoutId, exercises, last, unit }: { workoutId: strin
           </select>
         </label>
       )}
-      <div className="row">
-        <label>Weight ({unit})<input name="weight" type="number" step="0.5" min="0" inputMode="decimal" defaultValue={adding ? "" : prefill?.weight} required /></label>
-        <label>Reps<input name="reps" type="number" min="1" inputMode="numeric" defaultValue={adding ? "" : prefill?.reps} required /></label>
-        <label>RPE<input name="rpe" type="number" step="0.5" min="1" max="10" inputMode="decimal" /></label>
-      </div>
+
+      {kind === "strength" && (
+        <div className="row">
+          <label>Weight ({unit})<input name="weight" type="number" step="0.5" min="0" inputMode="decimal" defaultValue={p?.weight} required /></label>
+          <label>Reps<input name="reps" type="number" min="1" inputMode="numeric" defaultValue={p?.reps} required /></label>
+          <label>RPE<input name="rpe" type="number" step="0.5" min="1" max="10" inputMode="decimal" /></label>
+        </div>
+      )}
+      {kind === "bodyweight" && (
+        <div className="row">
+          <label>Reps<input name="reps" type="number" min="1" inputMode="numeric" defaultValue={p?.reps} required /></label>
+          <label>Added weight ({unit})<input name="weight" type="number" step="0.5" min="0" inputMode="decimal" /></label>
+        </div>
+      )}
+      {kind === "cardio" && (
+        <div className="row">
+          <label>Minutes<input name="minutes" type="number" step="0.5" min="0.5" inputMode="decimal" defaultValue={p?.minutes || undefined} required /></label>
+          <label>Distance ({distUnit})<input name="distance" type="number" step="0.01" min="0" inputMode="decimal" defaultValue={p?.distance || undefined} /></label>
+        </div>
+      )}
+
       <div className="row">
         <button type="submit">Add set</button>
         <button type="button" className="ghost" onClick={() => setAdding((a) => !a)}>

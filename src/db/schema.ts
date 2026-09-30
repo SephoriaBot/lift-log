@@ -17,6 +17,8 @@ export const exercises = sqliteTable(
     userId: text("user_id").notNull(),
     name: text("name").notNull(),
     muscleGroup: text("muscle_group"),
+    // strength = weight x reps, bodyweight = reps (+ optional added weight), cardio = time (+ optional distance)
+    kind: text("kind", { enum: ["strength", "bodyweight", "cardio"] }).notNull().default("strength"),
     createdAt: createdAt(),
   },
   (t) => [unique().on(t.userId, t.name)],
@@ -47,6 +49,9 @@ export const sets = sqliteTable(
     reps: integer("reps").notNull(),
     weightKg: real("weight_kg").notNull(),
     rpe: real("rpe"),
+    // Cardio sets store reps = 0 and weight_kg = 0; distance is stored in meters.
+    durationSec: integer("duration_sec"),
+    distanceM: real("distance_m"),
     createdAt: createdAt(),
   },
   (t) => [index("sets_user_exercise").on(t.userId, t.exerciseId), index("sets_workout").on(t.workoutId)],

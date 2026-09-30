@@ -8,7 +8,7 @@ export default async function Home() {
   return (
     <main style={{ paddingTop: "5rem" }}>
       <h1>Liftlog</h1>
-      <p>Log every set in seconds, see what you lifted last time, and watch the numbers climb.</p>
+      <p>Log every set in seconds and track your progress.</p>
       <div className="row" style={{ marginTop: "1.5rem" }}>
         <Link href="/sign-up"><button style={{ width: "100%" }}>Create account</button></Link>
         <Link href="/sign-in"><button className="ghost" style={{ width: "100%" }}>Sign in</button></Link>
