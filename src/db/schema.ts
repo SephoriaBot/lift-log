@@ -56,3 +56,35 @@ export const sets = sqliteTable(
   },
   (t) => [index("sets_user_exercise").on(t.userId, t.exerciseId), index("sets_workout").on(t.workoutId)],
 );
+
+export const routines = sqliteTable("routines", {
+  id: id(),
+  userId: text("user_id").notNull(),
+  name: text("name").notNull(),
+  createdAt: createdAt(),
+});
+
+export const routineExercises = sqliteTable(
+  "routine_exercises",
+  {
+    id: id(),
+    userId: text("user_id").notNull(),
+    routineId: text("routine_id").notNull().references(() => routines.id, { onDelete: "cascade" }),
+    exerciseId: text("exercise_id").notNull().references(() => exercises.id, { onDelete: "cascade" }),
+    position: integer("position").notNull(),
+  },
+  (t) => [index("routine_exercises_routine").on(t.routineId)],
+);
+
+// Exercises planned for (or done in) a workout, in order. Filled by routines / "repeat last" and as sets are logged.
+export const workoutExercises = sqliteTable(
+  "workout_exercises",
+  {
+    id: id(),
+    userId: text("user_id").notNull(),
+    workoutId: text("workout_id").notNull().references(() => workouts.id, { onDelete: "cascade" }),
+    exerciseId: text("exercise_id").notNull().references(() => exercises.id, { onDelete: "cascade" }),
+    position: integer("position").notNull(),
+  },
+  (t) => [unique().on(t.workoutId, t.exerciseId)],
+);

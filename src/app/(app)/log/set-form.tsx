@@ -6,8 +6,8 @@ type Kind = "strength" | "bodyweight" | "cardio";
 type Ex = { id: string; name: string; kind: Kind };
 type Last = Record<string, { reps: number; weight: number; minutes: number; distance: number }>;
 
-export function SetForm({ workoutId, exercises, last, unit }: { workoutId: string; exercises: Ex[]; last: Last; unit: string }) {
-  const [ex, setEx] = useState(exercises[0]?.id ?? "");
+export function SetForm({ workoutId, exercises, last, unit, initialEx }: { workoutId: string; exercises: Ex[]; last: Last; unit: string; initialEx?: string }) {
+  const [ex, setEx] = useState(exercises.some((e) => e.id === initialEx) ? initialEx! : exercises[0]?.id ?? "");
   const [adding, setAdding] = useState(exercises.length === 0);
   const [newKind, setNewKind] = useState<Kind>("strength");
   const kind: Kind = adding ? newKind : exercises.find((e) => e.id === ex)?.kind ?? "strength";

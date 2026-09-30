@@ -8,6 +8,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <Link href="/log">Log</Link>
         <Link href="/history">History</Link>
         <Link href="/progress">Progress</Link>
+        <Link href="/routines">Routines</Link>
         <Link href="/settings">Settings</Link>
         <span className="grow" />
         <UserButton />
