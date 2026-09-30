@@ -67,28 +67,63 @@ export default async function LogPage({ searchParams }: { searchParams: Promise<
         <SetForm key={ex ?? "none"} workoutId={active.id} initialEx={ex}
           exercises={exs.map((e) => ({ id: e.id, name: e.name, kind: e.kind }))} last={last} unit={unit} />
       </div>
-      {planned.map((p) => {
-        const list = rows.filter((s) => s.exerciseId === p.exerciseId);
-        return (
-          <div className="card" key={p.exerciseId}>
-            <div className="set" style={{ borderTop: 0, paddingTop: 0 }}>
-              <h2 style={{ margin: 0 }}>{p.name}</h2>
-              <Link href={`/log?ex=${p.exerciseId}#log`}>Log set</Link>
-            </div>
-            {list.length === 0 && <p className="mute" style={{ margin: 0 }}>No sets yet.</p>}
-            {list.map((s, i) => (
-              <div className="set" key={s.id}>
-                <span>
-                  <span className="big">{describeSet(s.kind, s, unit)}</span>
-                  {prs.has(s.id) && <strong style={{ color: "var(--accent)", marginLeft: ".5rem" }}>New PR</strong>}
-                </span>
-                <form action={deleteSet}><input type="hidden" name="id" value={s.id} />
-                  <button className="link" aria-label={`Delete set ${i + 1} of ${p.name}`}>Delete</button></form>
-              </div>
+     {planned.map((p) => {
+  const list = rows.filter((s) => s.exerciseId === p.exerciseId);
+  const previous = lastRaw[p.exerciseId] ?? [];
+
+  return (
+    <div className="card" key={p.exerciseId}>
+      <div className="set" style={{ borderTop: 0, paddingTop: 0 }}>
+        <h2 style={{ margin: 0 }}>{p.name}</h2>
+        <Link href={`/log?ex=${p.exerciseId}#log`}>Log set</Link>
+      </div>
+
+      {previous.length > 0 && (
+        <div style={{ marginBottom: ".75rem" }}>
+          <p className="mute" style={{ margin: 0 }}>
+            Last workout
+          </p>
+          <div className="mute">
+            {previous.map((s, i) => (
+              <span key={`${s.workoutId}-${i}`}>
+                {i > 0 && " · "}
+                {describeSet(p.kind, s, unit)}
+              </span>
             ))}
           </div>
-        );
-      })}
+        </div>
+      )}
+
+      {list.length === 0 && (
+        <p className="mute" style={{ margin: 0 }}>
+          No sets yet.
+        </p>
+      )}
+
+      {list.map((s, i) => (
+        <div className="set" key={s.id}>
+          <span>
+            <span className="big">{describeSet(s.kind, s, unit)}</span>
+            {prs.has(s.id) && (
+              <strong style={{ color: "var(--accent)", marginLeft: ".5rem" }}>
+                New PR
+              </strong>
+            )}
+          </span>
+          <form action={deleteSet}>
+            <input type="hidden" name="id" value={s.id} />
+            <button
+              className="link"
+              aria-label={`Delete set ${i + 1} of ${p.name}`}
+            >
+              Delete
+            </button>
+          </form>
+        </div>
+      ))}
+    </div>
+  );
+})}
       {planned.length > 0 && (
         <details className="card">
           <summary>Save as routine</summary>
