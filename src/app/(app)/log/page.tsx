@@ -47,13 +47,17 @@ export default async function LogPage({ searchParams }: { searchParams: Promise<
   ]);
   const prs = new Set(prIds);
   const last = Object.fromEntries(
-    Object.entries(lastRaw).map(([id, v]) => [id, {
+  Object.entries(lastRaw).map(([id, sets]) => {
+    const v = sets[0];
+
+    return [id, {
       reps: v.reps,
       weight: kgTo(v.weightKg, unit),
       minutes: Math.round(((v.durationSec ?? 0) / 60) * 10) / 10,
       distance: v.distanceM ? distFromM(v.distanceM, unit) : 0,
-    }]),
-  );
+    }];
+  }),
+);
 
   return (
     <>
