@@ -4,7 +4,13 @@ import { useState } from "react";
 import { addSet } from "@/app/actions";
 
 type Kind = "strength" | "bodyweight" | "cardio";
-type Ex = { id: string; name: string; kind: Kind };
+
+type Ex = {
+  id: string;
+  name: string;
+  kind: Kind;
+};
+
 type Last = Record<
   string,
   {
@@ -119,24 +125,39 @@ export function SetForm({
               </div>
 
               {kind === "strength" && (
-                <strong>
-                  {p.weight} {unit} × {p.reps}
-                  {p.weight === 0 && " (bodyweight)"}
-                </strong>
+                <>
+                  <strong>
+                    {p.weight} {unit} × {p.reps}
+                    {p.weight === 0 && " (bodyweight)"}
+                  </strong>
+                  <div className="mute" style={{ fontSize: "0.85rem", marginTop: "0.2rem" }}>
+                    Progression idea: try the same weight for 1 more rep
+                  </div>
+                </>
               )}
 
               {kind === "bodyweight" && (
-                <strong>
-                  {p.reps} reps
-                  {p.weight > 0 && ` + ${p.weight} ${unit}`}
-                </strong>
+                <>
+                  <strong>
+                    {p.reps} reps
+                    {p.weight > 0 && ` + ${p.weight} ${unit}`}
+                  </strong>
+                  <div className="mute" style={{ fontSize: "0.85rem", marginTop: "0.2rem" }}>
+                    Progression idea: try 1 more rep
+                  </div>
+                </>
               )}
 
               {kind === "cardio" && (
-                <strong>
-                  {p.minutes} min
-                  {p.distance > 0 && ` · ${p.distance} ${distUnit}`}
-                </strong>
+                <>
+                  <strong>
+                    {p.minutes} min
+                    {p.distance > 0 && ` · ${p.distance} ${distUnit}`}
+                  </strong>
+                  <div className="mute" style={{ fontSize: "0.85rem", marginTop: "0.2rem" }}>
+                    Progression idea: match or slightly exceed last time
+                  </div>
+                </>
               )}
             </div>
           )}
