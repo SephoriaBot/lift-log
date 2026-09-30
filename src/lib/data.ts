@@ -149,20 +149,67 @@ function repo(uid: string) {
       await db.delete(sets).where(and(eq(sets.id, id), eq(sets.userId, uid)));
     },
 
-    /** Most recent set per exercise, used to prefill the log form. */
-    async lastSets() {
-      const rows = await db
-        .select({ exerciseId: sets.exerciseId, reps: sets.reps, weightKg: sets.weightKg,
-          durationSec: sets.durationSec, distanceM: sets.distanceM })
-        .from(sets)
-        .innerJoin(workouts, eq(sets.workoutId, workouts.id))
-        .where(eq(sets.userId, uid))
-        .orderBy(desc(workouts.date), desc(sets.createdAt))
-        .limit(500);
-      const out: Record<string, { reps: number; weightKg: number; durationSec: number | null; distanceM: number | null }> = {};
-      for (const r of rows) out[r.exerciseId] ??= r;
-      return out;
-    },
+    /** All sets from the most recent completed workout for each exercise. */
+async lastSets() {
+  const rows = await db
+    .select({
+      exerciseId: sets.exerciseId,
+      workoutId: sets.workoutId,
+      workoutDate: workouts.date,
+      reps: sets.reps,
+      weightKg: sets.weightKg,
+      durationSec: sets.durationSec,
+      distanceM: sets.distanceM,
+      createdAt: sets.createdAt,
+    })
+    .from(sets)
+    .innerJoin(workouts, eq(sets.workoutId, workouts.id))
+    .where(
+      and(
+        eq(sets.userId, uid),
+        isNotNull(workouts.finishedAt),
+      ),
+    )
+    .orderBy(
+      desc(workouts.date),
+      desc(workouts.createdAt),
+      sets.createdAt,
+    )
+    .limit(500);
+
+  const latestWorkout = new Map<string, string>();
+
+  for (const row of rows) {
+    if (!latestWorkout.has(row.exerciseId)) {
+      latestWorkout.set(row.exerciseId, row.workoutId);
+    }
+  }
+
+  const out: Record<
+    string,
+    {
+      workoutId: string;
+      reps: number;
+      weightKg: number;
+      durationSec: number | null;
+      distanceM: number | null;
+    }[]
+  > = {};
+
+  for (const row of rows) {
+    if (latestWorkout.get(row.exerciseId) !== row.workoutId) continue;
+
+    (out[row.exerciseId] ??= []).push({
+      workoutId: row.workoutId,
+      reps: row.reps,
+      weightKg: row.weightKg,
+      durationSec: row.durationSec,
+      distanceM: row.distanceM,
+    });
+  }
+
+  return out;
+},
 
     getWorkout: (id: string) =>
       db.query.workouts.findFirst({ where: and(eq(workouts.id, id), eq(workouts.userId, uid)) }),
