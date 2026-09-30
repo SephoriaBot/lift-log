@@ -78,21 +78,39 @@ export default async function LogPage({ searchParams }: { searchParams: Promise<
         <Link href={`/log?ex=${p.exerciseId}#log`}>Log set</Link>
       </div>
 
-      {previous.length > 0 && (
-        <div style={{ marginBottom: ".75rem" }}>
-          <p className="mute" style={{ margin: 0 }}>
-            Last workout
-          </p>
-          <div className="mute">
-            {previous.map((s, i) => (
-              <span key={`${s.workoutId}-${i}`}>
-                {i > 0 && " · "}
-                {describeSet(p.kind, s, unit)}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
+     {previous.length > 0 && (
+  <div style={{ marginBottom: ".75rem" }}>
+    <p className="mute" style={{ margin: 0 }}>
+      Last workout
+    </p>
+
+    <div className="mute">
+      {previous.map((s, i) => (
+        <span key={`${s.workoutId}-${i}`}>
+          {i > 0 && " · "}
+          {describeSet(p.kind, s, unit)}
+        </span>
+      ))}
+    </div>
+
+    <p
+      className="mute"
+      style={{
+        margin: ".35rem 0 0",
+        fontSize: ".85rem",
+      }}
+    >
+      {p.kind === "strength" &&
+        "Progression idea: try the same weight for 1 more rep."}
+
+      {p.kind === "bodyweight" &&
+        "Progression idea: try 1 more rep."}
+
+      {p.kind === "cardio" &&
+        "Progression idea: match or slightly exceed last time."}
+    </p>
+  </div>
+)}
 
       {list.length === 0 && (
         <p className="mute" style={{ margin: 0 }}>
