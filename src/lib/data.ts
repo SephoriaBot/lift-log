@@ -321,16 +321,24 @@ async lastSets() {
       return rows.map((r) => r.date);
     },
 
-    history: () =>
-      db.select({
-        id: workouts.id,
-        date: workouts.date,
-        name: workouts.name,
-        sets: sql<number>`count(${sets.id})`,
-        volumeKg: sql<number>`coalesce(sum(${sets.weightKg} * ${sets.reps}), 0)`,
-      })
+        history: () =>
+      db
+        .select({
+          id: workouts.id,
+          date: workouts.date,
+          name: workouts.name,
+          sets: sql<number>`count(${sets.id})`,
+          volumeKg: sql<number>`coalesce(sum(${sets.weightKg} * ${sets.reps}), 0)`,
+          muscleGroups: sql<string>`
+            coalesce(
+              group_concat(distinct ${exercises.muscleGroup}),
+              ''
+            )
+          `,
+        })
         .from(workouts)
         .leftJoin(sets, eq(sets.workoutId, workouts.id))
+        .leftJoin(exercises, eq(sets.exerciseId, exercises.id))
         .where(eq(workouts.userId, uid))
         .groupBy(workouts.id)
         .orderBy(desc(workouts.date), desc(workouts.createdAt))
