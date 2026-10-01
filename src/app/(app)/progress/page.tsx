@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { scoped } from "@/lib/data";
-import { display, score } from "@/lib/metrics";
+import { display, score, volume } from "@/lib/metrics";
 import { Chart } from "./chart";
 import { Streak } from "./streak";
 import "./progress.css";
@@ -62,6 +62,35 @@ export default async function ProgressPage({
     first && latest
       ? latestScore - firstScore
       : 0;
+
+  const totalVolume = current
+    ? rows.reduce(
+        (sum, set) => sum + volume(current.kind, set),
+        0,
+      )
+    : 0;
+
+  const recentVolume = current
+    ? rows
+        .filter((set) => {
+          const cutoff = new Date();
+          cutoff.setDate(cutoff.getDate() - 30);
+          return new Date(set.date) >= cutoff;
+        })
+        .reduce(
+          (sum, set) => sum + volume(current.kind, set),
+          0,
+        )
+    : 0;
+
+  const volumeLabel =
+    current?.kind === "strength"
+      ? `${unit} lifted`
+      : current?.kind === "bodyweight"
+        ? "weighted reps"
+        : current
+          ? "training minutes / distance"
+          : "";
 
   return (
     <>
@@ -134,13 +163,53 @@ export default async function ProgressPage({
                   key={b.exerciseId}
                   href={`/progress?ex=${b.exerciseId}`}
                   className={`pill${
-                    b.exerciseId === current.exerciseId ? " on" : ""
+                    b.exerciseId === current.exerciseId
+                      ? " on"
+                      : ""
                   }`}
                 >
                   {b.name}
                 </Link>
               ))}
             </div>
+          </div>
+
+          <div className="card">
+            <h2>Training volume</h2>
+
+            <div
+              className="row"
+              style={{
+                flexWrap: "wrap",
+                marginBottom: "0.5rem",
+              }}
+            >
+              <div>
+                <div className="mute">All time</div>
+                <strong className="big">
+                  {current.kind === "strength"
+                    ? `${Math.round(totalVolume).toLocaleString()} ${unit}`
+                    : current.kind === "bodyweight"
+                      ? Math.round(totalVolume).toLocaleString()
+                      : `${Math.round(totalVolume).toLocaleString()}`}
+                </strong>
+              </div>
+
+              <div>
+                <div className="mute">Last 30 days</div>
+                <strong className="big">
+                  {current.kind === "strength"
+                    ? `${Math.round(recentVolume).toLocaleString()} ${unit}`
+                    : current.kind === "bodyweight"
+                      ? Math.round(recentVolume).toLocaleString()
+                      : `${Math.round(recentVolume).toLocaleString()}`}
+                </strong>
+              </div>
+            </div>
+
+            <p className="mute" style={{ margin: 0 }}>
+              {volumeLabel}
+            </p>
           </div>
 
           <div className="card">
