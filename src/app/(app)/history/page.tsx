@@ -4,6 +4,7 @@ import { kgTo } from "@/lib/metrics";
 
 export default async function HistoryPage() {
   const r = await scoped();
+
   const [unit, list] = await Promise.all([
     r.getUnit(),
     r.history(),
@@ -34,6 +35,18 @@ export default async function HistoryPage() {
 
   const weekVolume =
     Math.round(kgTo(weekVolumeKg, unit)).toLocaleString();
+
+  const muscleGroups = [
+    ...new Set(
+      weekWorkouts
+        .flatMap((w) =>
+          String(w.muscleGroups ?? "")
+            .split(",")
+            .map((group) => group.trim())
+            .filter(Boolean),
+        ),
+    ),
+  ].sort();
 
   return (
     <>
@@ -75,6 +88,29 @@ export default async function HistoryPage() {
           Monday–today
         </p>
       </div>
+
+      {muscleGroups.length > 0 && (
+        <div className="card">
+          <h2>Muscles this week</h2>
+
+          <div
+            className="row"
+            style={{
+              flexWrap: "wrap",
+              gap: "0.5rem",
+            }}
+          >
+            {muscleGroups.map((group) => (
+              <span
+                key={group}
+                className="pill"
+              >
+                {group}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {list.length === 0 && (
         <p className="mute">
