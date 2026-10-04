@@ -4,6 +4,7 @@ import { and, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { exercises, routineExercises, routines, sets, userSettings, workoutExercises, workouts } from "@/db/schema";
 import { score, type Kind } from "@/lib/metrics";
+import { LIMITS, LimitError } from "@/lib/limits";
 
 export const KG_PER_LB = 0.45359237;
 export type Unit = "kg" | "lb";
@@ -19,6 +20,11 @@ export async function scoped() {
 }
 
 function repo(uid: string) {
+  async function countRows(table: any, where: any) {
+    const [{ n }] = await db.select({ n: sql<number>`count(*)` }).from(table).where(where);
+    return Number(n);
+  }
+
   const owns = {
     workout: async (id: string) =>
       !!(await db.query.workouts.findFirst({ where: and(eq(workouts.id, id), eq(workouts.userId, uid)) })),
@@ -59,6 +65,12 @@ function repo(uid: string) {
     listExercises: () =>
       db.select().from(exercises).where(eq(exercises.userId, uid)).orderBy(exercises.name),
     async addExercise(name: string, muscleGroup: string | null, kind: Kind) {
+      const have = await db.query.exercises.findFirst({
+        where: and(eq(exercises.userId, uid), eq(exercises.name, name)),
+      });
+      if (!have && (await countRows(exercises, eq(exercises.userId, uid))) >= LIMITS.exercises) {
+        throw new LimitError("exercise limit");
+      }
       await db.insert(exercises).values({ userId: uid, name, muscleGroup, kind }).onConflictDoNothing();
       const row = await db.query.exercises.findFirst({
         where: and(eq(exercises.userId, uid), eq(exercises.name, name)),
@@ -74,6 +86,9 @@ function repo(uid: string) {
     async startWorkout(date: string, name: string, exerciseIds: string[] = []) {
       const active = await this.activeWorkout();
       if (active) return active.id;
+      if ((await countRows(workouts, eq(workouts.userId, uid))) >= LIMITS.workouts) {
+        throw new LimitError("workout limit");
+      }
       const [w] = await db.insert(workouts).values({ userId: uid, date, name }).returning();
       const ids = await this.ownedExerciseIds([...new Set(exerciseIds)]);
       if (ids.length) {
@@ -135,6 +150,9 @@ function repo(uid: string) {
     ) {
       // Reject IDs that belong to someone else before inserting.
       if (!(await owns.workout(workoutId)) || !(await owns.exercise(exerciseId))) throw new Error("Not found");
+      if ((await countRows(sets, and(eq(sets.userId, uid), eq(sets.workoutId, workoutId)))) >= LIMITS.setsPerWorkout) {
+        throw new LimitError("set limit");
+      }
       const inWorkout = await db.select({ id: workoutExercises.id }).from(workoutExercises).where(
         and(eq(workoutExercises.userId, uid), eq(workoutExercises.workoutId, workoutId), eq(workoutExercises.exerciseId, exerciseId)),
       );
@@ -249,6 +267,9 @@ async lastSets() {
     async createRoutine(name: string, exerciseIds: string[]) {
       const ids = await this.ownedExerciseIds([...new Set(exerciseIds)]);
       if (!ids.length) return;
+      if ((await countRows(routines, eq(routines.userId, uid))) >= LIMITS.routines) {
+        throw new LimitError("routine limit");
+      }
       const [rt] = await db.insert(routines).values({ userId: uid, name }).returning();
       await db.insert(routineExercises).values(
         ids.map((exerciseId, position) => ({ userId: uid, routineId: rt.id, exerciseId, position })),
