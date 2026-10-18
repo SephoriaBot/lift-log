@@ -88,3 +88,17 @@ export const workoutExercises = sqliteTable(
   },
   (t) => [unique().on(t.workoutId, t.exerciseId)],
 );
+
+// Calorie tracker: one row per food logged. Date is the user's local day (YYYY-MM-DD).
+export const foodEntries = sqliteTable(
+  "food_entries",
+  {
+    id: id(),
+    userId: text("user_id").notNull(),
+    date: text("date").notNull(),
+    name: text("name").notNull(),
+    calories: integer("calories").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("food_entries_user_date").on(t.userId, t.date)],
+);
