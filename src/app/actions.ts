@@ -158,3 +158,24 @@ export async function setUnit(fd: FormData) {
   if (unit === "kg" || unit === "lb") await r.setUnit(unit as Unit);
   refresh();
 }
+
+
+export async function addFood(fd: FormData) {
+  const r = await scoped();
+  const date = cleanDate(str(fd, "date"));
+  const name = text(fd, "name", LIMITS.nameLen);
+  const calories = Math.round(num(fd, "calories"));
+  if (!date || !name || !inRange(calories, 0, 20000)) return;
+  try {
+    await r.addFood(date, name, calories);
+  } catch (e) {
+    swallowLimit(e);
+  }
+  refresh();
+}
+
+export async function deleteFood(fd: FormData) {
+  const r = await scoped();
+  await r.deleteFood(str(fd, "id"));
+  refresh();
+}
