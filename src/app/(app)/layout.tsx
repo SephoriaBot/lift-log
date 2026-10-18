@@ -9,6 +9,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <Link href="/history">History</Link>
         <Link href="/progress">Progress</Link>
         <Link href="/best">Best</Link>
+        <Link href="/calories">Calories</Link>
         <Link href="/routines">Routines</Link>
         <Link href="/settings">Settings</Link>
         <span className="grow" />
