@@ -6,6 +6,8 @@ export const LIMITS = {
   setsPerWorkout: 300,
   routines: 100,
   routineExercises: 50,
+  foodPerDay: 100,
+  foodTotal: 50000,
   nameLen: 80,
   muscleLen: 40,
   notesLen: 2000,
