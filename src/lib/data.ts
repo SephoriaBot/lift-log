@@ -2,7 +2,7 @@ import "server-only";
 import { auth } from "@clerk/nextjs/server";
 import { and, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { exercises, routineExercises, routines, sets, userSettings, workoutExercises, workouts } from "@/db/schema";
+import { exercises, foodEntries, routineExercises, routines, sets, userSettings, workoutExercises, workouts } from "@/db/schema";
 import { score, type Kind } from "@/lib/metrics";
 import { LIMITS, LimitError } from "@/lib/limits";
 
@@ -361,6 +361,39 @@ async lastSets() {
           (r.reps === e.mostReps.reps && r.weightKg > e.mostReps.weightKg)) e.mostReps = r;
       }
       return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
+    },
+
+    /** Calorie tracker: foods logged on one day, oldest first. */
+    foodForDate: (date: string) =>
+      db.select({ id: foodEntries.id, name: foodEntries.name, calories: foodEntries.calories })
+        .from(foodEntries)
+        .where(and(eq(foodEntries.userId, uid), eq(foodEntries.date, date)))
+        .orderBy(foodEntries.createdAt),
+
+    /** Calorie tracker: daily totals for the most recent days that have entries, newest first. */
+    async foodTotals(days = 14) {
+      const rows = await db
+        .select({ date: foodEntries.date, total: sql<number>`sum(${foodEntries.calories})` })
+        .from(foodEntries)
+        .where(eq(foodEntries.userId, uid))
+        .groupBy(foodEntries.date)
+        .orderBy(desc(foodEntries.date))
+        .limit(days);
+      return rows.map((r) => ({ date: r.date, total: Number(r.total) }));
+    },
+
+    async addFood(date: string, name: string, calories: number) {
+      if ((await countRows(foodEntries, and(eq(foodEntries.userId, uid), eq(foodEntries.date, date)))) >= LIMITS.foodPerDay) {
+        throw new LimitError("food per day limit");
+      }
+      if ((await countRows(foodEntries, eq(foodEntries.userId, uid))) >= LIMITS.foodTotal) {
+        throw new LimitError("food total limit");
+      }
+      await db.insert(foodEntries).values({ userId: uid, date, name, calories });
+    },
+
+    async deleteFood(id: string) {
+      await db.delete(foodEntries).where(and(eq(foodEntries.id, id), eq(foodEntries.userId, uid)));
     },
 
     /** Distinct dates (YYYY-MM-DD) with at least one logged set, newest first. */
