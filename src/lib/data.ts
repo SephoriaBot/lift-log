@@ -334,6 +334,35 @@ async lastSets() {
       return [...best.values()].sort((a, b) => a.name.localeCompare(b.name));
     },
 
+    /** Per-exercise records: heaviest weight, most reps in one set, longest distance/time. */
+    async records() {
+      const rows = await db
+        .select({ exerciseId: exercises.id, name: exercises.name, kind: exercises.kind, date: workouts.date,
+          reps: sets.reps, weightKg: sets.weightKg, durationSec: sets.durationSec, distanceM: sets.distanceM })
+        .from(sets)
+        .innerJoin(exercises, eq(sets.exerciseId, exercises.id))
+        .innerJoin(workouts, eq(sets.workoutId, workouts.id))
+        .where(eq(sets.userId, uid))
+        .limit(5000);
+      type Row = (typeof rows)[number];
+      const map = new Map<string, { exerciseId: string; name: string; kind: Kind; heaviest?: Row; mostReps?: Row; top?: Row; longest?: Row }>();
+      for (const r of rows) {
+        const e = map.get(r.exerciseId) ?? { exerciseId: r.exerciseId, name: r.name, kind: r.kind as Kind };
+        map.set(r.exerciseId, e);
+        if (r.kind === "cardio") {
+          const len = (x: Row) => (x.distanceM && x.distanceM > 0 ? x.distanceM : x.durationSec ?? 0);
+          if (!e.longest || len(r) > len(e.longest)) e.longest = r;
+          continue;
+        }
+        if (!e.top || score(r.kind as Kind, r) > score(e.top.kind as Kind, e.top)) e.top = r;
+        if (r.weightKg > 0 && (!e.heaviest || r.weightKg > e.heaviest.weightKg ||
+          (r.weightKg === e.heaviest.weightKg && r.reps > e.heaviest.reps))) e.heaviest = r;
+        if (!e.mostReps || r.reps > e.mostReps.reps ||
+          (r.reps === e.mostReps.reps && r.weightKg > e.mostReps.weightKg)) e.mostReps = r;
+      }
+      return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
+    },
+
     /** Distinct dates (YYYY-MM-DD) with at least one logged set, newest first. */
     async trainingDays() {
       const rows = await db.selectDistinct({ date: workouts.date }).from(workouts)
