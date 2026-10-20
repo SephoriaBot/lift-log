@@ -5,18 +5,21 @@ import { db } from "@/db";
 import { exercises, foodEntries, routineExercises, routines, sets, userSettings, workoutExercises, workouts } from "@/db/schema";
 import { score, type Kind } from "@/lib/metrics";
 import { LIMITS, LimitError } from "@/lib/limits";
+import { getGuestId } from "@/lib/guest";
 
 export const KG_PER_LB = 0.45359237;
 export type Unit = "kg" | "lb";
 
 /**
- * The ONLY door to the database. The user id comes from Clerk's session, never from
+ * The ONLY door to the database. The user id comes from Clerk's session (or the demo-guest cookie), never from
  * request input, and every query below is filtered by it (the app-level equivalent of RLS).
  */
 export async function scoped() {
   const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
-  return repo(userId);
+  // A signed-in Clerk user always wins; otherwise fall back to a demo guest id (cookie-based).
+  const uid = userId ?? (await getGuestId());
+  if (!uid) throw new Error("Unauthorized");
+  return repo(uid);
 }
 
 function repo(uid: string) {
