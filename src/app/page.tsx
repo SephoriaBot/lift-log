@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
+import { getGuestId } from "@/lib/guest";
 
 export default async function Home() {
   const { userId } = await auth();
-  if (userId) redirect("/log");
+  if (userId || (await getGuestId())) redirect("/log");
   return (
     <main style={{ paddingTop: "5rem" }}>
       <h1>Liftlog</h1>
@@ -13,6 +14,12 @@ export default async function Home() {
         <Link href="/sign-up"><button style={{ width: "100%" }}>Create account</button></Link>
         <Link href="/sign-in"><button className="ghost" style={{ width: "100%" }}>Sign in</button></Link>
       </div>
+      <form action="/guest" method="post" style={{ marginTop: "1rem" }}>
+        <button className="ghost" style={{ width: "100%" }}>Try the demo (no sign-in)</button>
+        <p className="mute" style={{ fontSize: "0.8rem", textAlign: "center" }}>
+          Guest data stays in this browser session and is wiped when you exit the demo.
+        </p>
+      </form>
     </main>
   );
 }
