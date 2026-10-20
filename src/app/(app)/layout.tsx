@@ -1,6 +1,7 @@
-import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
+import Link from "next/link";
+import { TabBar } from "@/components/tab-bar";
 import { getGuestId } from "@/lib/guest";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -8,14 +9,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const isGuest = !userId && !!(await getGuestId());
   return (
     <>
-      <nav>
-        <Link href="/log">Log</Link>
-        <Link href="/history">History</Link>
-        <Link href="/progress">Progress</Link>
-        <Link href="/best">Best</Link>
-        <Link href="/calories">Calories</Link>
-        <Link href="/routines">Routines</Link>
-        <Link href="/settings">Settings</Link>
+      <header className="topbar">
+        <strong>Liftlog</strong>
         <span className="grow" />
         {isGuest ? (
           <>
@@ -28,8 +23,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         ) : (
           <UserButton />
         )}
-      </nav>
+      </header>
       <main>{children}</main>
+      <TabBar />
     </>
   );
 }
